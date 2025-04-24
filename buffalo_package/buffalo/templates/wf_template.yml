@@ -1,0 +1,21 @@
+workflow:
+  works:
+    - name: "Step 1: Preparation"
+      status: not_started
+      output_file: "prepare.md"
+      comment: "Prepare required resources and documents"
+    
+    - name: "Step 2: Implementation"
+      status: not_started
+      output_file: "implementation.md"
+      comment: "Implement core functionality"
+    
+    - name: "Step 3: Testing"
+      status: not_started
+      output_file: "testing.md"
+      comment: "Perform functional testing and validation"
+    
+    - name: "Step 4: Documentation"
+      status: not_started
+      output_file: "documentation.md"
+      comment: "Write user documentation and instructions" 
