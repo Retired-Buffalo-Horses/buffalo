@@ -157,4 +157,4 @@ class Buffalo:
         project_folder_path = self.base_dir / project_name
         project_folder_path.mkdir(exist_ok=True)
 
-        project.save_project(project_folder_path / self.WF_FILE_NAME)
+        project.save_project()
