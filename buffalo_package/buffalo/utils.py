@@ -4,11 +4,9 @@ Buffalo Utility Module
 Provides common utility functions, such as safe YAML handling and file operations
 """
 import yaml
-from typing import Any, Dict, TextIO, Optional, Union
-import os
-from pathlib import Path
+from typing import Any, Dict
 
-from .exceptions import FileFormatError, BuffaloFileNotFoundError
+from .exceptions import FileFormatError
 
 
 def safe_load_yaml(yaml_string: str) -> Dict[str, Any]:
@@ -43,71 +41,58 @@ def dump_yaml(data: Dict[str, Any]) -> str:
         raise FileFormatError(f"Unable to convert to YAML string: {e}")
 
 
-def read_file(file_path: str, encoding: str = "utf-8") -> str:
+def read_file(file_path: str) -> str:
     """
     Read file content
 
-    Args:
-        file_path: File path
-        encoding: File encoding, default is utf-8
-
-    Returns:
-        File content
+    :param file_path: File path
+    :return: File content
+    :raises FileFormatError: If file cannot be read
     """
     try:
-        with open(file_path, "r", encoding=encoding) as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
-    except OSError as e:
-        if isinstance(e, FileNotFoundError):  # Built-in FileNotFoundError
-            raise BuffaloFileNotFoundError(f"File does not exist: {file_path}")
-        raise FileFormatError(f"Error reading file: {e}")
     except UnicodeDecodeError:
-        raise FileFormatError(f"Cannot read file with {encoding} encoding: {file_path}")
-    except Exception as e:
-        raise FileFormatError(f"Error reading file: {e}")
+        raise FileFormatError(f"Cannot read file with utf-8 encoding: {file_path}")
 
 
-def write_file(file_path: str, content: str, encoding: str = "utf-8") -> None:
+def write_file(file_path: str, content: str) -> None:
     """
-    Write file content
+    Write content to file
 
-    Args:
-        file_path: File path
-        content: Content to write
-        encoding: File encoding, default is utf-8
+    :param file_path: File path
+    :param content: Content to write
+    :raises FileFormatError: If file cannot be written
     """
     try:
-        # Ensure directory exists
-        os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
-        with open(file_path, "w", encoding=encoding) as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
     except Exception as e:
-        raise FileFormatError(f"Error writing file: {e}")
+        raise FileFormatError(f"Cannot write file: {file_path}") from e
 
 
-def load_yaml_file(file_path: str, encoding: str = "utf-8") -> Dict[str, Any]:
+def load_yaml_file(file_path: str) -> Dict[str, Any]:
     """
     Load YAML file
 
-    Args:
-        file_path: File path
-        encoding: File encoding, default is utf-8
-
-    Returns:
-        Parsed YAML content
+    :param file_path: YAML file path
+    :return: YAML content
+    :raises FileFormatError: If file cannot be read or parsed
     """
-    content = read_file(file_path, encoding)
-    return safe_load_yaml(content)
+    content = read_file(file_path)
+    try:
+        return yaml.safe_load(content)
+    except yaml.YAMLError as e:
+        raise FileFormatError(f"Cannot parse YAML file: {file_path}") from e
 
 
-def save_yaml_file(file_path: str, data: Dict[str, Any], encoding: str = "utf-8") -> None:
+def save_yaml_file(file_path: str, data: Dict[str, Any]) -> None:
     """
     Save data to YAML file
 
-    Args:
-        file_path: File path
-        data: Data to save
-        encoding: File encoding, default is utf-8
+    :param file_path: YAML file path
+    :param data: Data to save
+    :raises FileFormatError: If file cannot be written
     """
-    yaml_content = dump_yaml(data)
-    write_file(file_path, yaml_content, encoding) 
+    yaml_content = yaml.dump(data, default_flow_style=False)
+    write_file(file_path, yaml_content)

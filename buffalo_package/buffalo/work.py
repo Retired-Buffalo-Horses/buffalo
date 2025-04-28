@@ -1,6 +1,3 @@
-import logging
-from typing import Optional, List, Dict, Any
-
 from .exceptions import WorkStatusError
 
 
@@ -72,4 +69,4 @@ class Work:
         
         :return: Returns True if work status is IN_PROGRESS, otherwise returns False
         """
-        return self.status == Work.IN_PROGRESS 
+        return self.status == Work.IN_PROGRESS
