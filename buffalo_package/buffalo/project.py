@@ -2,7 +2,6 @@ import logging
 from pathlib import Path
 from typing import Optional, List, Tuple
 import shutil
-import os
 
 from .work import Work
 from .exceptions import (ProjectLoadError, ProjectSaveError, BuffaloFileNotFoundError, WorkflowFormatError, WorkflowDescriptionError, ConfigurationError)

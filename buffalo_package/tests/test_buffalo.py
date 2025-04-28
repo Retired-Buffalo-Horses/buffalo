@@ -1,5 +1,4 @@
 """Unit test module for Buffalo package, providing tests for Buffalo class core functionalities"""
-import os
 import tempfile
 import unittest
 from pathlib import Path
