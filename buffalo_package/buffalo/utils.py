@@ -3,8 +3,10 @@ Buffalo Utility Module
 
 Provides common utility functions, such as safe YAML handling and file operations
 """
-import yaml
+
 from typing import Any, Dict
+
+import yaml
 
 from .exceptions import FileFormatError
 
@@ -22,7 +24,7 @@ def safe_load_yaml(yaml_string: str) -> Dict[str, Any]:
     try:
         return yaml.safe_load(yaml_string) or {}
     except yaml.YAMLError as e:
-        raise FileFormatError(f"Unable to parse YAML content: {e}")
+        raise FileFormatError(f"Unable to parse YAML content: {e}") from e
 
 
 def dump_yaml(data: Dict[str, Any]) -> str:
@@ -38,7 +40,7 @@ def dump_yaml(data: Dict[str, Any]) -> str:
     try:
         return yaml.dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True)
     except yaml.YAMLError as e:
-        raise FileFormatError(f"Unable to convert to YAML string: {e}")
+        raise FileFormatError(f"Unable to convert to YAML string: {e}") from e
 
 
 def read_file(file_path: str) -> str:
@@ -52,8 +54,8 @@ def read_file(file_path: str) -> str:
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
-    except UnicodeDecodeError:
-        raise FileFormatError(f"Cannot read file with utf-8 encoding: {file_path}")
+    except UnicodeDecodeError as e:
+        raise FileFormatError(f"Cannot read file with utf-8 encoding: {file_path}") from e
 
 
 def write_file(file_path: str, content: str) -> None:
