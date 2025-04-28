@@ -4,7 +4,6 @@ import shutil
 import pytest
 
 from buffalo.project import Project, ProjectLoadError
-from buffalo.exceptions import BuffaloFileNotFoundError
 
 
 @pytest.fixture(name="project")
