@@ -1,6 +1,8 @@
 import logging
 from pathlib import Path
 from typing import Optional, List, Tuple
+import shutil
+import os
 
 from .work import Work
 from .exceptions import (ProjectLoadError, ProjectSaveError, BuffaloFileNotFoundError, WorkflowFormatError, WorkflowDescriptionError, ConfigurationError)
@@ -351,3 +353,64 @@ class Project:
         for work in self.works:
             output += f"            {work}\n"
         return output
+
+    def copy_to_project(self, source_path: str) -> None:
+        """
+        将指定路径的文件或文件夹复制到项目目录中
+
+        :param source_path: 源文件或文件夹的路径
+        :raises FileNotFoundError: 如果源文件或文件夹不存在
+        :raises PermissionError: 如果没有足够的权限进行复制操作
+        """
+        if not self.project_path:
+            raise ProjectLoadError("项目路径未设置")
+
+        source = Path(source_path)
+        if not source.exists():
+            raise FileNotFoundError(f"源路径不存在: {source_path}")
+
+        # 确保项目目录存在
+        self.project_path.mkdir(parents=True, exist_ok=True)
+        target = self.project_path / source.name
+
+        try:
+            if source.is_file():
+                shutil.copy2(source, target)
+            elif source.is_dir():
+                shutil.copytree(source, target, dirs_exist_ok=True)
+            else:
+                raise ValueError(f"不支持的文件类型: {source_path}")
+        except (shutil.Error, OSError) as e:
+            raise ProjectSaveError(f"复制文件失败: {e}") from e
+
+    def move_to_project(self, source_path: str) -> None:
+        """
+        将指定路径的文件或文件夹移动到项目目录中
+
+        :param source_path: 源文件或文件夹的路径
+        :raises FileNotFoundError: 如果源文件或文件夹不存在
+        :raises PermissionError: 如果没有足够的权限进行移动操作
+        """
+        if not self.project_path:
+            raise ProjectLoadError("项目路径未设置")
+
+        source = Path(source_path)
+        if not source.exists():
+            raise FileNotFoundError(f"源路径不存在: {source_path}")
+
+        # 确保项目目录存在
+        self.project_path.mkdir(parents=True, exist_ok=True)
+        target = self.project_path / source.name
+
+        try:
+            if source.is_file():
+                shutil.move(source, target)
+            elif source.is_dir():
+                # 如果目标目录已存在，先删除它
+                if target.exists():
+                    shutil.rmtree(target)
+                shutil.move(source, target)
+            else:
+                raise ValueError(f"不支持的文件类型: {source_path}")
+        except (shutil.Error, OSError) as e:
+            raise ProjectSaveError(f"移动文件失败: {e}") from e
