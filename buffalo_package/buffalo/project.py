@@ -18,7 +18,7 @@ class Project:
     """
 
     LAST_WORK_IN_PROGRESS = "last_work_in_progress"
-    WORKFLOW_FILE_NAME = "workflow.yml"
+    WORKFLOW_FILE_NAME = "buffalo.yml"
 
     def __init__(self,
                  folder_name: str,

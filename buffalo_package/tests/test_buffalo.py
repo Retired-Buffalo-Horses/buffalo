@@ -80,7 +80,7 @@ class TestBuffalo(unittest.TestCase):
             self.assertTrue(project_dir.is_dir(), "Project directory should be a directory")
 
             # Verify that project file was created
-            project_file = project_dir / "workflow.yml"
+            project_file = project_dir / "buffalo.yml"
             self.assertTrue(project_file.exists(), "Project file should exist")
             self.assertTrue(project_file.is_file(), "Project file should be a file")
 
@@ -103,7 +103,7 @@ class TestBuffalo(unittest.TestCase):
             self.assertTrue(project_dir.is_dir(), "Project directory should be a directory")
 
             # Check if project file exists
-            project_file = project_dir / "workflow.yml"
+            project_file = project_dir / "buffalo.yml"
             self.assertTrue(project_file.exists(), "Project file should exist")
             self.assertTrue(project_file.is_file(), "Project file should be a file")
 
@@ -134,7 +134,7 @@ class TestBuffalo(unittest.TestCase):
             self.assertEqual(project.folder_name, "test_project")
 
             # Check if project file exists
-            project_file = project_dir / "workflow.yml"
+            project_file = project_dir / "buffalo.yml"
             self.assertTrue(project_file.exists(), "Project file should exist")
             self.assertTrue(project_file.is_file(), "Project file should be a file")
 
@@ -260,7 +260,7 @@ class TestBuffalo(unittest.TestCase):
             buffalo.save_project(project, "test_project")
 
             # Check if project file exists
-            project_file = self.base_dir / "test_project" / "workflow.yml"
+            project_file = self.base_dir / "test_project" / "buffalo.yml"
             self.assertTrue(project_file.exists(), "Project file should exist")
             self.assertTrue(project_file.is_file(), "Project file should be a file")
 
@@ -291,7 +291,7 @@ class TestBuffalo(unittest.TestCase):
 
             # Check if project directory and file were created
             self.assertTrue(project_dir.exists(), "Project directory should be created")
-            project_file = project_dir / "workflow.yml"
+            project_file = project_dir / "buffalo.yml"
             self.assertTrue(project_file.exists(), "Project file should exist")
 
 

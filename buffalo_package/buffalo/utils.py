@@ -96,5 +96,5 @@ def save_yaml_file(file_path: str, data: Dict[str, Any]) -> None:
     :param data: Data to save
     :raises FileFormatError: If file cannot be written
     """
-    yaml_content = yaml.dump(data, default_flow_style=False)
+    yaml_content = yaml.dump(data, default_flow_style=False, allow_unicode=True)
     write_file(file_path, yaml_content)

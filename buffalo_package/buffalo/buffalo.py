@@ -15,7 +15,7 @@ class Buffalo:
     After a period of work, please destroy the class instance and then reinstantiate it, or use the Buffalo.load_projects() method to reload projects.
     """
 
-    WF_FILE_NAME = "workflow.yml"
+    WF_FILE_NAME = "buffalo.yml"
     WF_DESCRIPTION_FILE_NAME = "workflow_description.yml"
 
     def __init__(self, base_dir: Path, template_path: Path):

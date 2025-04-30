@@ -207,5 +207,39 @@ def test_load_nonexistent_project():
     assert loaded_project is None
 
 
+def test_save_and_load_chinese_project():
+    """Test saving and loading project with Chinese characters"""
+    # Create a project with Chinese name
+    base_dir = Path("test_temp")
+    base_dir.mkdir(exist_ok=True)
+    project = Project("测试项目", base_dir)
+
+    # Ensure project directory exists
+    assert project.project_path is not None
+    project.project_path.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # Save project
+        project.save_project()
+
+        # Load project
+        loaded_project = Project.load("测试项目", base_dir)
+
+        # Verify project was loaded correctly
+        assert loaded_project is not None
+        assert loaded_project.folder_name == "测试项目"
+
+        # Verify YAML file content
+        project_file = project.project_path / "buffalo.yml"
+        assert project_file.exists()
+        content = project_file.read_text(encoding="utf-8")
+        assert "folder_name: 测试项目" in content
+        assert "\\u" not in content  # Ensure no Unicode escape sequences
+    finally:
+        # Clean up
+        if base_dir.exists():
+            shutil.rmtree(base_dir)
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__] + sys.argv[1:]))
