@@ -3,15 +3,19 @@ workflow:
     - name: "Step 1: Preparation"
       status: not_started
       comment: "Prepare required resources and documents"
+      index: 1
     
     - name: "Step 2: Implementation"
       status: not_started
       comment: "Implement core functionality"
-    
+      index: 2
+
     - name: "Step 3: Testing"
       status: not_started
       comment: "Perform functional testing and validation"
-    
+      index: 3
+
     - name: "Step 4: Documentation"
       status: not_started
-      comment: "Write user documentation and instructions" 
+      comment: "Write user documentation and instructions"
+      index: 4

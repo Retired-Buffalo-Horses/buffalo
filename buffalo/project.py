@@ -199,14 +199,25 @@ class Project:
                 if "comment" not in work:
                     raise WorkflowDescriptionError(
                         f"Missing comment field in work {work['name']}")
+                if "index" not in work:
+                    raise WorkflowDescriptionError(
+                        f"Missing index field in work {work['name']}")
+                try:
+                    index = int(work["index"])
+                except (ValueError, TypeError) as e:
+                    raise WorkflowDescriptionError(
+                        f"Invalid index value in work {work['name']}: {work['index']}. Index must be an integer.") from e
                 work_count += 1
                 # Create Work object
                 work_obj = Work(
-                    index=work_count,
+                    index=index,
                     name=work["name"],
                     comment=work["comment"],
                 )
                 self.works.append(work_obj)
+
+            # Sort works by index
+            self.works.sort(key=lambda x: x.index)
 
         except (WorkflowDescriptionError, WorkflowFormatError) as e:
             # Directly rethrow our custom exceptions
@@ -270,21 +281,28 @@ class Project:
                 if "comment" not in work:
                     raise ProjectLoadError(
                         f"Missing comment field in work {work['name']}")
+                if "index" not in work:
+                    raise ProjectLoadError(
+                        f"Missing index field in work {work['name']}")
+                try:
+                    index = int(work["index"])
+                except (ValueError, TypeError) as e:
+                    raise ProjectLoadError(
+                        f"Invalid index value in work {work['name']}: {work['index']}. Index must be an integer.") from e
                 work_count += 1
                 # Create Work object
                 work_obj = Work(
-                    index=work_count,
+                    index=index,
                     name=work["name"],
                     comment=work["comment"],
                 )
                 work_obj.set_status(work["status"])
                 self.works.append(work_obj)
 
-        except ProjectLoadError:
-            # Directly rethrow wrapped exceptions
-            raise
+            # Sort works by index
+            self.works.sort(key=lambda x: x.index)
+
         except Exception as e:
-            # Wrap all other exceptions as ProjectLoadError
             raise ProjectLoadError(
                 f"Failed to parse project file {saved_project_file_path}: {e}"
             ) from e
@@ -305,6 +323,7 @@ class Project:
                 "name": work.name,
                 "status": work.status,
                 "comment": work.comment,
+                "index": work.index,
             })
 
         # Use utility function to save YAML file

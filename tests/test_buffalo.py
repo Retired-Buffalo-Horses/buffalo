@@ -26,9 +26,11 @@ class TestBuffalo(unittest.TestCase):
     - name: "test_work"
       status: not_started
       comment: "Test work"
+      index: 1
     - name: "second_work"
       status: not_started
       comment: "Second test work"
+      index: 2
 """)
 
     def tearDown(self):

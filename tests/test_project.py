@@ -72,8 +72,7 @@ def test_copy_dir_to_project(project, files):
     assert target_dir.exists()
     assert (target_dir / "test.txt").exists()
     assert (target_dir / "subdir" / "subfile.txt").exists()
-    assert (target_dir / "subdir" /
-            "subfile.txt").read_text() == "subfile content"
+    assert (target_dir / "subdir" / "subfile.txt").read_text() == "subfile content"
 
 
 def test_copy_dir_with_custom_name(project, files):
@@ -85,8 +84,7 @@ def test_copy_dir_with_custom_name(project, files):
     assert target_dir.exists()
     assert (target_dir / "test.txt").exists()
     assert (target_dir / "subdir" / "subfile.txt").exists()
-    assert (target_dir / "subdir" /
-            "subfile.txt").read_text() == "subfile content"
+    assert (target_dir / "subdir" / "subfile.txt").read_text() == "subfile content"
 
 
 def test_move_file_to_project(project, files):
@@ -234,6 +232,73 @@ def test_save_and_load_chinese_project():
         content = project_file.read_text(encoding="utf-8")
         assert "folder_name: 测试项目" in content
         assert "\\u" not in content  # Ensure no Unicode escape sequences
+    finally:
+        # Clean up
+        if base_dir.exists():
+            shutil.rmtree(base_dir)
+
+
+def test_work_index_ordering():
+    """Test that works are ordered by index regardless of their order in the template"""
+    # Create a test template with works in random index order
+    template_content = """workflow:
+  works:
+    - name: "Work 6"
+      status: not_started
+      comment: "Sixth work"
+      index: 6
+    - name: "Work 4"
+      status: not_started
+      comment: "Fourth work"
+      index: 4
+    - name: "Work 2"
+      status: not_started
+      comment: "Second work"
+      index: 2
+    - name: "Work 1"
+      status: not_started
+      comment: "First work"
+      index: 1
+"""
+    # Create temporary directory and template file
+    base_dir = Path("test_temp")
+    base_dir.mkdir(exist_ok=True)
+    template_path = base_dir / "test_template.yml"
+    template_path.write_text(template_content)
+
+    try:
+        # Create project with the template
+        project = Project("test_project", base_dir, template_path)
+
+        # Verify works are ordered by index
+        assert len(project.works) == 4
+        assert project.works[0].index == 1
+        assert project.works[0].name == "Work 1"
+        assert project.works[1].index == 2
+        assert project.works[1].name == "Work 2"
+        assert project.works[2].index == 4
+        assert project.works[2].name == "Work 4"
+        assert project.works[3].index == 6
+        assert project.works[3].name == "Work 6"
+
+        # Save project
+        project.save_project()
+
+        # Load project
+        loaded_project = Project.load("test_project", base_dir)
+        assert loaded_project is not None
+
+        # Verify loaded works are still ordered by index
+        assert len(loaded_project.works) == 4
+        assert loaded_project.works[0].index == 1
+        assert loaded_project.works[0].name == "Work 1"
+        assert loaded_project.works[1].index == 2
+        assert loaded_project.works[1].name == "Work 2"
+        assert loaded_project.works[2].index == 4
+        assert loaded_project.works[2].name == "Work 4"
+        assert loaded_project.works[3].index == 6
+        assert loaded_project.works[3].name == "Work 6"
+
     finally:
         # Clean up
         if base_dir.exists():
