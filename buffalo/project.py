@@ -6,7 +6,7 @@ import shutil
 from .work import Work
 from .exceptions import (ProjectLoadError, ProjectSaveError,
                          BuffaloFileNotFoundError, WorkflowFormatError,
-                         WorkflowDescriptionError, ConfigurationError)
+                         ConfigurationError)
 from .utils import load_yaml_file, save_yaml_file
 
 
@@ -55,7 +55,7 @@ class Project:
             # Create project directory if it doesn't exist
             self.project_path.mkdir(parents=True, exist_ok=True)
 
-            self._load_workflow_description(template_path)
+            self._load_yaml_file(template_path, WorkflowFormatError)
 
             # Save project file
             self.save_project()
@@ -79,7 +79,8 @@ class Project:
             project = cls(folder_name, base_dir)
 
             # Load saved project
-            project._load_saved_project()
+            saved_project_file_path = project.project_path / project.WORKFLOW_FILE_NAME
+            project._load_yaml_file(saved_project_file_path, ProjectLoadError, require_folder_name=True)
             return project
         except (ProjectLoadError, BuffaloFileNotFoundError) as e:
             logging.error(f"Failed to load project {folder_name}: {e}")
@@ -159,74 +160,116 @@ class Project:
 
         return True
 
+    def _process_works(self, yml_works: List[dict], error_class: type) -> None:
+        """
+        Process works from YAML data and create Work objects.
+
+        :param yml_works: List of work dictionaries from YAML
+        :param error_class: Exception class to raise for errors
+        :raises error_class: If any required field is missing or invalid
+        """
+        work_count = 0
+        for work in yml_works:
+            if "name" not in work:
+                raise error_class("Missing name field in work")
+            if "status" not in work:
+                raise error_class(f"Missing status field in work {work['name']}")
+            if "comment" not in work:
+                raise error_class(f"Missing comment field in work {work['name']}")
+            if "index" not in work:
+                raise error_class(f"Missing index field in work {work['name']}")
+            try:
+                index = int(work["index"])
+            except (ValueError, TypeError) as e:
+                raise error_class(
+                    f"Invalid index value in work {work['name']}: {work['index']}. Index must be an integer.") from e
+            work_count += 1
+            # Create Work object
+            work_obj = Work(
+                index=index,
+                name=work["name"],
+                comment=work["comment"],
+            )
+            if "status" in work:
+                work_obj.set_status(work["status"])
+            self.works.append(work_obj)
+
+        # Sort works by index
+        self.works.sort(key=lambda x: x.index)
+
+    def _validate_yaml_structure(self, yaml_data: dict, file_path: Path, error_class: type) -> dict:
+        """
+        Validate YAML file structure and return workflow data.
+
+        :param yaml_data: YAML data to validate
+        :param file_path: Path of the YAML file (for error messages)
+        :param error_class: Exception class to raise for errors
+        :return: Workflow data from YAML
+        :raises error_class: If the YAML structure is invalid
+        """
+        if "workflow" not in yaml_data:
+            raise error_class(
+                f"Specified file {file_path} does not contain the workflow field"
+            )
+
+        yml_workflow = yaml_data["workflow"]
+
+        if "works" not in yml_workflow:
+            raise error_class(
+                f"Specified file {file_path} does not contain the works field"
+            )
+
+        return yml_workflow
+
+    def _load_yaml_file(self, file_path: Path, error_class: type, require_folder_name: bool = False) -> None:
+        """
+        Load and process a YAML file.
+
+        :param file_path: Path to the YAML file
+        :param error_class: Exception class to raise for errors
+        :param require_folder_name: Whether to require and process folder_name field
+        :raises error_class: If loading or processing the file fails
+        :raises BuffaloFileNotFoundError: If the file does not exist
+        """
+        if not file_path.exists():
+            raise BuffaloFileNotFoundError(
+                f"Specified file does not exist: {file_path}"
+            )
+
+        try:
+            # Load YAML file
+            yaml_data = load_yaml_file(str(file_path))
+
+            # Process folder_name if required
+            if require_folder_name:
+                if "folder_name" not in yaml_data:
+                    raise error_class(
+                        f"File {file_path} does not contain the folder_name field"
+                    )
+                self.folder_name = yaml_data["folder_name"]
+
+            # Validate YAML structure
+            yml_workflow = self._validate_yaml_structure(
+                yaml_data, file_path, error_class
+            )
+
+            # Process works
+            yml_works = yml_workflow["works"]
+            self._process_works(yml_works, error_class)
+
+        except Exception as e:
+            if isinstance(e, (error_class, BuffaloFileNotFoundError)):
+                raise
+            raise error_class(f"Failed to parse file {file_path}: {e}") from e
+
     def _load_workflow_description(self, template_path: Path) -> None:
         """
         Load workflow description file
 
         :param template_path: Workflow description file path
-        :raises WorkflowDescriptionError: If the workflow description file format is incorrect
         :raises WorkflowFormatError: If parsing the workflow description file fails
         """
-        try:
-            # Use utility function to load YAML file
-            workflow_description_yaml = load_yaml_file(str(template_path))
-
-            # Check if workflow_description_yaml contains the workflow field
-            if "workflow" not in workflow_description_yaml:
-                raise WorkflowDescriptionError(
-                    f"Specified description file {template_path} does not contain the workflow field"
-                )
-
-            yml_workflow = workflow_description_yaml["workflow"]
-
-            # Check if yml_workflow contains the works field
-            if "works" not in yml_workflow:
-                raise WorkflowDescriptionError(
-                    f"Specified description file {template_path} does not contain the works field"
-                )
-
-            yml_works = yml_workflow["works"]
-
-            work_count = 0
-            # Check if each work contains name, status, output_file, comment fields
-            for work in yml_works:
-                if "name" not in work:
-                    raise WorkflowDescriptionError(
-                        "Missing name field in work")
-                if "status" not in work:
-                    raise WorkflowDescriptionError(
-                        f"Missing status field in work {work['name']}")
-                if "comment" not in work:
-                    raise WorkflowDescriptionError(
-                        f"Missing comment field in work {work['name']}")
-                if "index" not in work:
-                    raise WorkflowDescriptionError(
-                        f"Missing index field in work {work['name']}")
-                try:
-                    index = int(work["index"])
-                except (ValueError, TypeError) as e:
-                    raise WorkflowDescriptionError(
-                        f"Invalid index value in work {work['name']}: {work['index']}. Index must be an integer.") from e
-                work_count += 1
-                # Create Work object
-                work_obj = Work(
-                    index=index,
-                    name=work["name"],
-                    comment=work["comment"],
-                )
-                self.works.append(work_obj)
-
-            # Sort works by index
-            self.works.sort(key=lambda x: x.index)
-
-        except (WorkflowDescriptionError, WorkflowFormatError) as e:
-            # Directly rethrow our custom exceptions
-            raise e
-        except Exception as e:
-            # Wrap all other exceptions as WorkflowFormatError
-            raise WorkflowFormatError(
-                f"Failed to parse workflow_description file {template_path}: {e}"
-            ) from e
+        self._load_yaml_file(template_path, WorkflowFormatError)
 
     def _load_saved_project(self) -> None:
         """
@@ -238,74 +281,7 @@ class Project:
             raise ProjectLoadError("Project path not set")
 
         saved_project_file_path = self.project_path / self.WORKFLOW_FILE_NAME
-        if not saved_project_file_path.exists():
-            raise BuffaloFileNotFoundError(
-                f"Specified project file does not exist: {saved_project_file_path}"
-            )
-
-        try:
-            # Use utility function to load YAML file
-            saved_project_yaml = load_yaml_file(str(saved_project_file_path))
-
-            # Check if saved_project_yaml contains the folder_name field
-            if "folder_name" not in saved_project_yaml:
-                raise ProjectLoadError(
-                    f"Project file {saved_project_file_path} does not contain the folder_name field"
-                )
-
-            self.folder_name = saved_project_yaml["folder_name"]
-
-            if "workflow" not in saved_project_yaml:
-                raise ProjectLoadError(
-                    f"Project file {saved_project_file_path} does not contain the workflow field"
-                )
-
-            yml_workflow = saved_project_yaml["workflow"]
-
-            # Check if yml_workflow contains the works field
-            if "works" not in yml_workflow:
-                raise ProjectLoadError(
-                    f"Project file {saved_project_file_path} does not contain the works field"
-                )
-
-            yml_works = yml_workflow["works"]
-
-            # Create works from saved project file
-            work_count = 0
-            for work in yml_works:
-                if "name" not in work:
-                    raise ProjectLoadError("Missing name field in work")
-                if "status" not in work:
-                    raise ProjectLoadError(
-                        f"Missing status field in work {work['name']}")
-                if "comment" not in work:
-                    raise ProjectLoadError(
-                        f"Missing comment field in work {work['name']}")
-                if "index" not in work:
-                    raise ProjectLoadError(
-                        f"Missing index field in work {work['name']}")
-                try:
-                    index = int(work["index"])
-                except (ValueError, TypeError) as e:
-                    raise ProjectLoadError(
-                        f"Invalid index value in work {work['name']}: {work['index']}. Index must be an integer.") from e
-                work_count += 1
-                # Create Work object
-                work_obj = Work(
-                    index=index,
-                    name=work["name"],
-                    comment=work["comment"],
-                )
-                work_obj.set_status(work["status"])
-                self.works.append(work_obj)
-
-            # Sort works by index
-            self.works.sort(key=lambda x: x.index)
-
-        except Exception as e:
-            raise ProjectLoadError(
-                f"Failed to parse project file {saved_project_file_path}: {e}"
-            ) from e
+        self._load_yaml_file(saved_project_file_path, ProjectLoadError, require_folder_name=True)
 
     def save_project(self):
         """

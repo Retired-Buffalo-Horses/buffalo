@@ -56,8 +56,4 @@ class ProjectSaveError(ProjectError):
 
 
 class WorkflowFormatError(FileFormatError):
-    """Workflow File Format Error"""
-
-
-class WorkflowDescriptionError(WorkflowError):
-    """Workflow Description Error""" 
+    """Workflow file format or description error""" 
