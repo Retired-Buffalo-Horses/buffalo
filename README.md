@@ -67,7 +67,6 @@ my_project/
 
 - Python >= 3.8
 - PyYAML >= 5.1
-- setuptools >= 42.0.0
 
 ## License
 
