@@ -4,6 +4,7 @@ import shutil
 import pytest
 
 from buffalo.project import Project, ProjectLoadError
+from buffalo.work import Work
 
 
 @pytest.fixture(name="project")
@@ -298,6 +299,66 @@ def test_work_index_ordering():
         assert loaded_project.works[2].name == "Work 4"
         assert loaded_project.works[3].index == 6
         assert loaded_project.works[3].name == "Work 6"
+
+    finally:
+        # Clean up
+        if base_dir.exists():
+            shutil.rmtree(base_dir)
+
+
+def test_get_next_not_started_work():
+    """Test get_next_not_started_work method with different scenarios"""
+    # Create a test template with multiple works
+    template_content = """workflow:
+  works:
+    - name: "Work 1"
+      status: not_started
+      comment: "First work"
+      index: 1
+    - name: "Work 2"
+      status: not_started
+      comment: "Second work"
+      index: 2
+    - name: "Work 3"
+      status: not_started
+      comment: "Third work"
+      index: 3
+"""
+    # Create temporary directory and template file
+    base_dir = Path("test_temp")
+    base_dir.mkdir(exist_ok=True)
+    template_path = base_dir / "test_template.yml"
+    template_path.write_text(template_content)
+
+    try:
+        # Create project with the template
+        project = Project("test_project", base_dir, template_path)
+
+        # Test 1: Get next work without check (should return first work)
+        next_work = project.get_next_not_started_work(without_check=True)
+        assert next_work is not None
+        assert next_work.name == "Work 1"
+
+        # Test 2: Get next work with check (should return first work as no previous work)
+        next_work = project.get_next_not_started_work(without_check=False)
+        assert next_work is not None
+        assert next_work.name == "Work 1"
+
+        # Test 3: Complete first work and get next work
+        next_work.set_status(Work.DONE)
+        next_work = project.get_next_not_started_work(without_check=False)
+        assert next_work is not None
+        assert next_work.name == "Work 2"
+
+        # Test 4: Set first work to in_progress and try to get next work (should return None)
+        project.works[0].set_status(Work.IN_PROGRESS)
+        next_work = project.get_next_not_started_work(without_check=False)
+        assert next_work is None
+
+        # Test 5: Get next work without check (should return Work 2 despite Work 1 being in progress)
+        next_work = project.get_next_not_started_work(without_check=True)
+        assert next_work is not None
+        assert next_work.name == "Work 2"
 
     finally:
         # Clean up

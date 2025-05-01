@@ -238,10 +238,17 @@ class TestBuffalo(unittest.TestCase):
                 self.assertEqual(second_work.name, "second_work")
 
                 # Test without_check=True parameter, should be able to get completed test_work
+                # First get the work directly from project
+                test_work = project.get_work_by_name("test_work", without_check=True)
+                self.assertIsNotNone(test_work)
+                if test_work is not None:
+                    self.assertEqual(test_work.name, "test_work")
+                    self.assertEqual(test_work.status, Work.DONE)
+
+                # Then verify that get_a_job with without_check=True also works
                 project, test_work = buffalo.get_a_job("test_work", without_check=True)
                 self.assertIsNotNone(test_work)
                 self.assertIsNotNone(project)
-
                 if test_work is not None and project is not None:
                     self.assertEqual(test_work.name, "test_work")
                     self.assertEqual(test_work.status, Work.DONE)

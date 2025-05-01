@@ -111,7 +111,7 @@ class Buffalo:
             logging.error(f"Failed to create project {project_name}: {e}")
             return None
 
-    def get_a_job(self, job_name: str, without_check: bool = False) -> Tuple[Optional[Project], Optional[Work]]:
+    def get_a_job(self, job_name: str = None, without_check: bool = False) -> Tuple[Optional[Project], Optional[Work]]:
         """
         Get a project and its not started job with the specified name
 
@@ -121,9 +121,14 @@ class Buffalo:
         """
         # Iterate through all projects, find a not started work
         for project in self.projects.values():
-            work = project.get_work_by_name(job_name, without_check)
-            if work:
-                return project, work
+            if job_name:
+                work = project.get_work_by_name(job_name, without_check)
+                if work:
+                    return project, work
+            else:
+                work = project.get_next_not_started_work(without_check)
+                if work:
+                    return project, work
         return None, None
 
     def update_work_status(self, project_name: str, work: Work, status: str) -> None:

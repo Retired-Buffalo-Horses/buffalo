@@ -99,8 +99,8 @@ class Project:
                     return work
         else:
             # Get next not started work
-            work, last_work_status = self.get_next_not_started_work()
-            if work is not None and last_work_status is None and work.name == work_name:
+            work = self.get_next_not_started_work()
+            if work is not None and work.name == work_name:
                 return work
         return None
 
@@ -279,32 +279,37 @@ class Project:
                 return work
         return None
 
-    def get_next_not_started_work(self) -> Tuple[Optional[Work], Optional[str]]:
+    def get_next_not_started_work(self, without_check: bool = False) -> Optional[Work]:
         """
         Returns the next not started work
 
-        :return: Returns the next not started work; if no such work exists, returns None;
-         note that you need to check if the second element of the return value is LAST_WORK_IN_PROGRESS
+        This method has two modes of operation:
+        1. When without_check=True, it directly returns the next not started work without checking the status of previous works
+        2. When without_check=False, it checks the status of previous works and returns the next not started work
+
+        :param without_check: Whether to skip checking the status of previous works
+        :return: Returns the next not started work; if no such work exists, returns None
         """
         # Return the next not started work
-        is_last_work_done = None
+        is_last_work_done = True
+
         for work in self.works:
             if work.is_not_started():
-                if is_last_work_done is None:
-                    # This is the first work, directly return the current work
-                    return work, None
-                # If current Work is not the first Work, need to check if the previous Work is done
+                if without_check:
+                    # Just return the current work
+                    return work
                 else:
+                    # Should check if the last work is done
                     if is_last_work_done:
-                        return work, None
+                        # done, or this is the first work of the project
+                        return work
                     else:
-                        return work, self.LAST_WORK_IN_PROGRESS
+                        return None
 
             # Assign the is_done status of current work to is_last_work_done
             is_last_work_done = work.is_done()
 
-        logging.debug("No not started work found")
-        return None, None
+        return None
 
     def is_all_done(self) -> bool:
         """
