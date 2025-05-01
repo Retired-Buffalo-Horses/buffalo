@@ -1,6 +1,6 @@
 """Buffalo - A toolkit for quickly creating and managing projects"""
 
-__version__ = "0.1.0"
+__version__ = "0.1.4"
 __author__ = "Buffalo Team"
 __email__ = "buffalo@example.com"
 __copyright__ = "Copyright 2023 Buffalo Team"
