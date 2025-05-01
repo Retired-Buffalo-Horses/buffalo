@@ -4,9 +4,7 @@ from typing import Optional, List, Tuple
 import shutil
 
 from .work import Work
-from .exceptions import (ProjectLoadError, ProjectSaveError,
-                         BuffaloFileNotFoundError, WorkflowFormatError,
-                         ConfigurationError)
+from .exceptions import (ProjectLoadError, ProjectSaveError, BuffaloFileNotFoundError, WorkflowFormatError, ConfigurationError)
 from .utils import load_yaml_file, save_yaml_file
 
 
@@ -20,10 +18,7 @@ class Project:
     LAST_WORK_IN_PROGRESS = "last_work_in_progress"
     WORKFLOW_FILE_NAME = "buffalo.yml"
 
-    def __init__(self,
-                 folder_name: str,
-                 base_dir: Path,
-                 template_path: Optional[Path] = None):
+    def __init__(self, folder_name: str, base_dir: Path, template_path: Optional[Path] = None):
         """
         Initialize a new Project class.
 
@@ -41,9 +36,7 @@ class Project:
 
         # Validate project folder name first
         if not self._is_valid_folder_name(folder_name):
-            raise ConfigurationError(
-                f"Invalid project folder name: {folder_name}. Project folder name must be a valid folder name."
-            )
+            raise ConfigurationError(f"Invalid project folder name: {folder_name}. Project folder name must be a valid folder name.")
 
         # Set project folder name and path after validation
         self.folder_name = folder_name
@@ -55,7 +48,7 @@ class Project:
             # Create project directory if it doesn't exist
             self.project_path.mkdir(parents=True, exist_ok=True)
 
-            self._load_yaml_file(template_path, WorkflowFormatError)
+            self._load_yaml_file(template_path)
 
             # Save project file
             self.save_project()
@@ -80,15 +73,13 @@ class Project:
 
             # Load saved project
             saved_project_file_path = project.project_path / project.WORKFLOW_FILE_NAME
-            project._load_yaml_file(saved_project_file_path, ProjectLoadError, require_folder_name=True)
+            project._load_yaml_file(saved_project_file_path, require_folder_name=True)
             return project
         except (ProjectLoadError, BuffaloFileNotFoundError) as e:
             logging.error(f"Failed to load project {folder_name}: {e}")
             return None
 
-    def get_work_by_name(self,
-                         work_name: str,
-                         without_check: bool = False) -> Optional[Work]:
+    def get_work_by_name(self, work_name: str, without_check: bool = False) -> Optional[Work]:
         """
         Get a work by name.
 
@@ -150,8 +141,7 @@ class Project:
             return False
 
         # Check if name starts or ends with a dot or space
-        if name.startswith('.') or name.endswith('.') or name.startswith(
-                ' ') or name.endswith(' '):
+        if name.startswith('.') or name.endswith('.') or name.startswith(' ') or name.endswith(' '):
             return False
 
         # Check if name is too long (Windows has a 255 character limit for paths)
@@ -160,16 +150,30 @@ class Project:
 
         return True
 
-    def _process_works(self, yml_works: List[dict], error_class: type) -> None:
+    def _process_yaml_workflow(self, yaml_data: dict, file_path: Path, require_folder_name: bool = False) -> None:
         """
-        Process works from YAML data and create Work objects.
+        Validate YAML file structure and process works.
 
-        :param yml_works: List of work dictionaries from YAML
-        :param error_class: Exception class to raise for errors
-        :raises error_class: If any required field is missing or invalid
+        :param yaml_data: YAML data to validate
+        :param file_path: Path of the YAML file (for error messages)
+        :param require_folder_name: Whether this is a project file (True) or workflow file (False)
+        :raises WorkflowFormatError: If workflow file structure is invalid
+        :raises ProjectLoadError: If project file structure is invalid
         """
+        error_class = ProjectLoadError if require_folder_name else WorkflowFormatError
+
+        # Validate YAML structure
+        if "workflow" not in yaml_data:
+            raise error_class(f"Specified file {file_path} does not contain the workflow field")
+
+        yml_workflow = yaml_data["workflow"]
+
+        if "works" not in yml_workflow:
+            raise error_class(f"Specified file {file_path} does not contain the works field")
+
+        # Process works
         work_count = 0
-        for work in yml_works:
+        for work in yml_workflow["works"]:
             if "name" not in work:
                 raise error_class("Missing name field in work")
             if "status" not in work:
@@ -181,8 +185,7 @@ class Project:
             try:
                 index = int(work["index"])
             except (ValueError, TypeError) as e:
-                raise error_class(
-                    f"Invalid index value in work {work['name']}: {work['index']}. Index must be an integer.") from e
+                raise error_class(f"Invalid index value in work {work['name']}: {work['index']}. Index must be an integer.") from e
             work_count += 1
             # Create Work object
             work_obj = Work(
@@ -197,44 +200,18 @@ class Project:
         # Sort works by index
         self.works.sort(key=lambda x: x.index)
 
-    def _validate_yaml_structure(self, yaml_data: dict, file_path: Path, error_class: type) -> dict:
-        """
-        Validate YAML file structure and return workflow data.
-
-        :param yaml_data: YAML data to validate
-        :param file_path: Path of the YAML file (for error messages)
-        :param error_class: Exception class to raise for errors
-        :return: Workflow data from YAML
-        :raises error_class: If the YAML structure is invalid
-        """
-        if "workflow" not in yaml_data:
-            raise error_class(
-                f"Specified file {file_path} does not contain the workflow field"
-            )
-
-        yml_workflow = yaml_data["workflow"]
-
-        if "works" not in yml_workflow:
-            raise error_class(
-                f"Specified file {file_path} does not contain the works field"
-            )
-
-        return yml_workflow
-
-    def _load_yaml_file(self, file_path: Path, error_class: type, require_folder_name: bool = False) -> None:
+    def _load_yaml_file(self, file_path: Path, require_folder_name: bool = False) -> None:
         """
         Load and process a YAML file.
 
         :param file_path: Path to the YAML file
-        :param error_class: Exception class to raise for errors
         :param require_folder_name: Whether to require and process folder_name field
-        :raises error_class: If loading or processing the file fails
+        :raises WorkflowFormatError: If loading or processing the workflow file fails
+        :raises ProjectLoadError: If loading or processing the project file fails
         :raises BuffaloFileNotFoundError: If the file does not exist
         """
         if not file_path.exists():
-            raise BuffaloFileNotFoundError(
-                f"Specified file does not exist: {file_path}"
-            )
+            raise BuffaloFileNotFoundError(f"Specified file does not exist: {file_path}")
 
         try:
             # Load YAML file
@@ -243,33 +220,16 @@ class Project:
             # Process folder_name if required
             if require_folder_name:
                 if "folder_name" not in yaml_data:
-                    raise error_class(
-                        f"File {file_path} does not contain the folder_name field"
-                    )
+                    raise ProjectLoadError(f"File {file_path} does not contain the folder_name field")
                 self.folder_name = yaml_data["folder_name"]
 
-            # Validate YAML structure
-            yml_workflow = self._validate_yaml_structure(
-                yaml_data, file_path, error_class
-            )
-
-            # Process works
-            yml_works = yml_workflow["works"]
-            self._process_works(yml_works, error_class)
+            # Process YAML workflow
+            self._process_yaml_workflow(yaml_data, file_path, require_folder_name)
 
         except Exception as e:
-            if isinstance(e, (error_class, BuffaloFileNotFoundError)):
+            if isinstance(e, (WorkflowFormatError, ProjectLoadError, BuffaloFileNotFoundError)):
                 raise
-            raise error_class(f"Failed to parse file {file_path}: {e}") from e
-
-    def _load_workflow_description(self, template_path: Path) -> None:
-        """
-        Load workflow description file
-
-        :param template_path: Workflow description file path
-        :raises WorkflowFormatError: If parsing the workflow description file fails
-        """
-        self._load_yaml_file(template_path, WorkflowFormatError)
+            raise (WorkflowFormatError if not require_folder_name else ProjectLoadError)(f"Failed to parse file {file_path}: {e}") from e
 
     def _load_saved_project(self) -> None:
         """
@@ -281,7 +241,7 @@ class Project:
             raise ProjectLoadError("Project path not set")
 
         saved_project_file_path = self.project_path / self.WORKFLOW_FILE_NAME
-        self._load_yaml_file(saved_project_file_path, ProjectLoadError, require_folder_name=True)
+        self._load_yaml_file(saved_project_file_path, require_folder_name=True)
 
     def save_project(self):
         """
@@ -304,15 +264,9 @@ class Project:
 
         # Use utility function to save YAML file
         try:
-            save_yaml_file(str(self.project_path / self.WORKFLOW_FILE_NAME), {
-                "folder_name": self.folder_name,
-                "workflow": {
-                    "works": works_dict
-                }
-            })
+            save_yaml_file(str(self.project_path / self.WORKFLOW_FILE_NAME), {"folder_name": self.folder_name, "workflow": {"works": works_dict}})
         except Exception as e:
-            raise ProjectSaveError(
-                f"Failed to save project file: {e}") from e
+            raise ProjectSaveError(f"Failed to save project file: {e}") from e
 
     def get_current_work(self) -> Optional[Work]:
         """
@@ -325,8 +279,7 @@ class Project:
                 return work
         return None
 
-    def get_next_not_started_work(
-            self) -> Tuple[Optional[Work], Optional[str]]:
+    def get_next_not_started_work(self) -> Tuple[Optional[Work], Optional[str]]:
         """
         Returns the next not started work
 
@@ -374,9 +327,7 @@ class Project:
             output += f"            {work}\n"
         return output
 
-    def copy_to_project(self,
-                        source_path: Path,
-                        target_name: Optional[str] = None) -> None:
+    def copy_to_project(self, source_path: Path, target_name: Optional[str] = None) -> None:
         """
         Copy a file or directory to the project directory
 
@@ -390,21 +341,17 @@ class Project:
             raise ProjectLoadError("Project path not set")
 
         if not source_path.exists():
-            raise FileNotFoundError(
-                f"Source path does not exist: {source_path}")
+            raise FileNotFoundError(f"Source path does not exist: {source_path}")
 
         # Ensure project directory exists
         self.project_path.mkdir(parents=True, exist_ok=True)
 
         # Use custom target name if provided, otherwise use source name
-        target = self.project_path / (target_name
-                                      if target_name else source_path.name)
+        target = self.project_path / (target_name if target_name else source_path.name)
 
         # Validate target name if provided
         if target_name and not self._is_valid_folder_name(target_name):
-            raise ValueError(
-                f"Invalid target name: {target_name}. Name must be a valid file/folder name."
-            )
+            raise ValueError(f"Invalid target name: {target_name}. Name must be a valid file/folder name.")
 
         try:
             if source_path.is_file():
@@ -416,9 +363,7 @@ class Project:
         except (shutil.Error, OSError) as e:
             raise ProjectSaveError(f"Failed to copy file: {e}") from e
 
-    def move_to_project(self,
-                        source_path: Path,
-                        target_name: Optional[str] = None) -> None:
+    def move_to_project(self, source_path: Path, target_name: Optional[str] = None) -> None:
         """
         Move a file or directory to the project directory
 
@@ -432,21 +377,17 @@ class Project:
             raise ProjectLoadError("Project path not set")
 
         if not source_path.exists():
-            raise FileNotFoundError(
-                f"Source path does not exist: {source_path}")
+            raise FileNotFoundError(f"Source path does not exist: {source_path}")
 
         # Ensure project directory exists
         self.project_path.mkdir(parents=True, exist_ok=True)
 
         # Use custom target name if provided, otherwise use source name
-        target = self.project_path / (target_name
-                                      if target_name else source_path.name)
+        target = self.project_path / (target_name if target_name else source_path.name)
 
         # Validate target name if provided
         if target_name and not self._is_valid_folder_name(target_name):
-            raise ValueError(
-                f"Invalid target name: {target_name}. Name must be a valid file/folder name."
-            )
+            raise ValueError(f"Invalid target name: {target_name}. Name must be a valid file/folder name.")
 
         try:
             if source_path.is_file():
