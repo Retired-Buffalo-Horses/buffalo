@@ -25,11 +25,9 @@ class TestBuffalo(unittest.TestCase):
   works:
     - name: "test_work"
       status: not_started
-      output_file: "test.md"
       comment: "Test work"
     - name: "second_work"
       status: not_started
-      output_file: "second.md"
       comment: "Second test work"
 """)
 

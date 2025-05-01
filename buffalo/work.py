@@ -3,7 +3,7 @@ from .exceptions import WorkStatusError
 
 class Work:
     """
-    Work class is used to describe a work unit, including work name, work status, work output file, and work description
+    Work class is used to describe a work unit, including work name, work status, and work description
     
     Each Work object represents a step or task in the workflow
     """
@@ -13,19 +13,17 @@ class Work:
     IN_PROGRESS = "in_progress"
     DONE = "done"
 
-    def __init__(self, index: int, name: str, output_file: str, comment: str):
+    def __init__(self, index: int, name: str, comment: str):
         """
         Initialize a Work object
         
         :param index: Work index number
         :param name: Work name
-        :param output_file: Work output file path
         :param comment: Work description or comment
         """
         self.index: int = index
         self.name: str = name
         self.status: str = Work.NOT_STARTED
-        self.output_file: str = output_file
         self.comment: str = comment
 
     def __str__(self) -> str:
@@ -34,7 +32,7 @@ class Work:
         
         :return: String representation of Work object
         """
-        return f"Work(index={self.index}, name={self.name}, status={self.status}, output_file={self.output_file}, comment={self.comment})"
+        return f"Work(index={self.index}, name={self.name}, status={self.status}, comment={self.comment})"
 
     def set_status(self, status: str) -> None:
         """

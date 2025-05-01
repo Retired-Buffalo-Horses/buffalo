@@ -196,9 +196,6 @@ class Project:
                 if "status" not in work:
                     raise WorkflowDescriptionError(
                         f"Missing status field in work {work['name']}")
-                if "output_file" not in work:
-                    raise WorkflowDescriptionError(
-                        f"Missing output_file field in work {work['name']}")
                 if "comment" not in work:
                     raise WorkflowDescriptionError(
                         f"Missing comment field in work {work['name']}")
@@ -207,7 +204,6 @@ class Project:
                 work_obj = Work(
                     index=work_count,
                     name=work["name"],
-                    output_file=work["output_file"],
                     comment=work["comment"],
                 )
                 self.works.append(work_obj)
@@ -271,9 +267,6 @@ class Project:
                 if "status" not in work:
                     raise ProjectLoadError(
                         f"Missing status field in work {work['name']}")
-                if "output_file" not in work:
-                    raise ProjectLoadError(
-                        f"Missing output_file field in work {work['name']}")
                 if "comment" not in work:
                     raise ProjectLoadError(
                         f"Missing comment field in work {work['name']}")
@@ -282,7 +275,6 @@ class Project:
                 work_obj = Work(
                     index=work_count,
                     name=work["name"],
-                    output_file=work["output_file"],
                     comment=work["comment"],
                 )
                 work_obj.set_status(work["status"])
@@ -312,7 +304,6 @@ class Project:
             works_dict.append({
                 "name": work.name,
                 "status": work.status,
-                "output_file": work.output_file,
                 "comment": work.comment,
             })
 

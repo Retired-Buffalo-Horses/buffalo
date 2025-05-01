@@ -196,7 +196,6 @@ def test_load_project(project: Project):
     for i, work in enumerate(project.works):
         assert loaded_project.works[i].name == work.name
         assert loaded_project.works[i].status == work.status
-        assert loaded_project.works[i].output_file == work.output_file
         assert loaded_project.works[i].comment == work.comment
 
 
