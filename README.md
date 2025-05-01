@@ -10,6 +10,7 @@ Buffalo is a powerful workflow management tool designed for quickly creating and
 - 📁 Project template support
 - 🔍 Flexible work retrieval mechanism
 - 💾 Automatic project state saving and loading
+- 📊 Ordered workflow execution with index-based sorting
 
 ## Installation
 
@@ -26,13 +27,15 @@ workflow:
   works:
     - name: "task_1"
       status: not_started
-      output_file: "output_1.md"
       comment: "First task"
+      index: 1
     - name: "task_2"
       status: not_started
-      output_file: "output_2.md"
       comment: "Second task"
+      index: 2
 ```
+
+> Note: Each work in the workflow must have an `index` field, which is used to determine the execution order. Works will be automatically sorted by their index values, regardless of their order in the template file.
 
 2. Use Buffalo to create and manage projects:
 
