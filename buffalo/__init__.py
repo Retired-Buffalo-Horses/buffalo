@@ -1,43 +1,19 @@
 """Buffalo - A toolkit for quickly creating and managing projects"""
 
-__version__ = "0.1.4"
+__version__ = "0.1.6"
 __author__ = "Buffalo Team"
 __email__ = "buffalo@example.com"
 __copyright__ = "Copyright 2023 Buffalo Team"
 
 import os
-import pkg_resources
 from pathlib import Path
-import logging
 
 # Import exceptions
-from .exceptions import (
-    BuffaloError,
-    BuffaloFileNotFoundError,
-    FileFormatError,
-    ConfigError,
-    CommandError,
-    ProjectError,
-    ValidationError,
-    ConfigurationError,
-    WorkflowError,
-    WorkError,
-    WorkStatusError,
-    ProjectLoadError,
-    ProjectSaveError,
-    WorkflowFormatError,
-    WorkflowDescriptionError
-)
+from .exceptions import (BuffaloError, BuffaloFileNotFoundError, FileFormatError, ConfigError, CommandError, ProjectError, ValidationError, ConfigurationError,
+                         WorkflowError, WorkError, WorkStatusError, ProjectLoadError, ProjectSaveError, WorkflowFormatError)
 
 # Import utility functions
-from .utils import (
-    safe_load_yaml,
-    dump_yaml,
-    read_file,
-    write_file,
-    load_yaml_file,
-    save_yaml_file
-)
+from .utils import (safe_load_yaml, dump_yaml, read_file, write_file, load_yaml_file, save_yaml_file)
 
 # Import other functions
 from .work import Work
@@ -60,8 +36,7 @@ __all__ = [
     "ProjectLoadError",
     "ProjectSaveError",
     "WorkflowFormatError",
-    "WorkflowDescriptionError",
-    
+
     # Utility functions
     "safe_load_yaml",
     "dump_yaml",
@@ -69,7 +44,7 @@ __all__ = [
     "write_file",
     "load_yaml_file",
     "save_yaml_file",
-    
+
     # Other functions
     "get_template_dir",
     "get_template_path",
@@ -77,6 +52,7 @@ __all__ = [
     "Work",
     "Project",
 ]
+
 
 def get_template_dir() -> Path:
     """
@@ -87,6 +63,7 @@ def get_template_dir() -> Path:
     """
     return Path(os.path.join(os.path.dirname(__file__), "templates"))
 
+
 def get_template_path() -> str:
     """
     获取默认模板文件路径
@@ -95,4 +72,4 @@ def get_template_path() -> str:
         str: 默认模板文件的路径
     """
     template_dir = get_template_dir()
-    return str(template_dir / "wf_template.yml") 
+    return str(template_dir / "wf_template.yml")
