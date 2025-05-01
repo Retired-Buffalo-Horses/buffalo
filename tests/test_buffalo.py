@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 import shutil
+import logging
 
 from buffalo import Buffalo, Work, Project
 from buffalo.exceptions import ConfigurationError
@@ -154,14 +155,14 @@ class TestBuffalo(unittest.TestCase):
         buffalo.create_project("test_project")
 
         # Get work
-        project_folder_name, work = buffalo.get_a_job("test_work")
+        project, work = buffalo.get_a_job("test_work")
 
         # Check if work was retrieved successfully
         self.assertIsNotNone(work)
-        self.assertIsNotNone(project_folder_name)
-        if work is not None and project_folder_name is not None:
+        self.assertIsNotNone(project)
+        if work is not None and project is not None:
             self.assertEqual(work.name, "test_work")
-            self.assertEqual(project_folder_name, "test_project")
+            self.assertEqual(project.folder_name, "test_project")
 
     def test_update_work_status(self):
         """Test work status update functionality"""
@@ -172,19 +173,18 @@ class TestBuffalo(unittest.TestCase):
         buffalo.create_project("test_project")
 
         # Get work
-        project_folder_name, work = buffalo.get_a_job("test_work")
-        self.assertIsNotNone(project_folder_name)
+        project, work = buffalo.get_a_job("test_work")
+        self.assertIsNotNone(project)
         self.assertIsNotNone(work)
 
-        if project_folder_name is not None and work is not None:
+        if project is not None and work is not None:
             # Update work status
-            buffalo.update_work_status(project_folder_name, work, Work.IN_PROGRESS)
+            buffalo.update_work_status(project.folder_name, work, Work.IN_PROGRESS)
 
             # Check if work status was updated
             self.assertEqual(work.status, Work.IN_PROGRESS)
 
             # Get it again
-            project = buffalo.projects[project_folder_name]
             current_work = project.get_current_work()
 
             # Check if current work is the updated work
@@ -222,27 +222,27 @@ class TestBuffalo(unittest.TestCase):
         self.assertIsNotNone(project)
 
         # First get test_work and set it to completed
-        project_folder_name, work = buffalo.get_a_job("test_work")
+        project, work = buffalo.get_a_job("test_work")
         self.assertIsNotNone(work)
-        self.assertIsNotNone(project_folder_name)
+        self.assertIsNotNone(project)
 
-        if work is not None and project_folder_name is not None:
-            buffalo.update_work_status(project_folder_name, work, Work.DONE)
+        if work is not None and project is not None:
+            buffalo.update_work_status(project.folder_name, work, Work.DONE)
 
             # Get second work
-            project_folder_name, second_work = buffalo.get_a_job("second_work")
+            project, second_work = buffalo.get_a_job("second_work")
             self.assertIsNotNone(second_work)
-            self.assertIsNotNone(project_folder_name)
+            self.assertIsNotNone(project)
 
-            if second_work is not None and project_folder_name is not None:
+            if second_work is not None and project is not None:
                 self.assertEqual(second_work.name, "second_work")
 
                 # Test without_check=True parameter, should be able to get completed test_work
-                project_folder_name, test_work = buffalo.get_a_job("test_work", without_check=True)
+                project, test_work = buffalo.get_a_job("test_work", without_check=True)
                 self.assertIsNotNone(test_work)
-                self.assertIsNotNone(project_folder_name)
+                self.assertIsNotNone(project)
 
-                if test_work is not None and project_folder_name is not None:
+                if test_work is not None and project is not None:
                     self.assertEqual(test_work.name, "test_work")
                     self.assertEqual(test_work.status, Work.DONE)
 
@@ -293,6 +293,57 @@ class TestBuffalo(unittest.TestCase):
             self.assertTrue(project_dir.exists(), "Project directory should be created")
             project_file = project_dir / "buffalo.yml"
             self.assertTrue(project_file.exists(), "Project file should exist")
+
+    def test_work_flow(self):
+        """Test complete work flow: get job, update status and save project"""
+        # Create Buffalo instance
+        buffalo = Buffalo(self.base_dir, self.template_file)
+
+        # Create project
+        buffalo.create_project("test_project")
+
+        # Get work
+        project, work = buffalo.get_a_job("test_work")
+        self.assertIsNotNone(work)
+        self.assertIsNotNone(project)
+
+        if work is not None and project is not None:
+            # Log the start of processing
+            logging.info(f'{project.folder_name} - {work.name} 开始处理')
+
+            # Update work status
+            work.set_status(Work.DONE)
+
+            # Save project
+            project.save_project()
+
+            # Verify the changes
+            self.assertEqual(work.status, Work.DONE)
+
+            # Check if project was saved
+            project_file = self.base_dir / "test_project" / "buffalo.yml"
+            self.assertTrue(project_file.exists(), "Project file should exist")
+
+            # Check project file content
+            with open(project_file, "r", encoding="utf-8") as f:
+                content = f.read()
+                self.assertIn("status: done", content.lower(), "Work status should be updated to done")
+
+            # Create new Buffalo instance to reload project
+            buffalo2 = Buffalo(self.base_dir, self.template_file)
+
+            # Load the project again
+            reloaded_project = buffalo2.load_project("test_project")
+            self.assertIsNotNone(reloaded_project)
+
+            if reloaded_project is not None:
+                # Get the work from reloaded project with without_check=True
+                reloaded_work = reloaded_project.get_work_by_name("test_work", without_check=True)
+                self.assertIsNotNone(reloaded_work)
+
+                if reloaded_work is not None:
+                    # Verify the status is still DONE after reload
+                    self.assertEqual(reloaded_work.status, Work.DONE)
 
 
 if __name__ == "__main__":

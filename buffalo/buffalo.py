@@ -111,19 +111,19 @@ class Buffalo:
             logging.error(f"Failed to create project {project_name}: {e}")
             return None
 
-    def get_a_job(self, job_name: str, without_check: bool = False) -> Tuple[Optional[str], Optional[Work]]:
+    def get_a_job(self, job_name: str, without_check: bool = False) -> Tuple[Optional[Project], Optional[Work]]:
         """
-        Get a not started job with the specified name
+        Get a project and its not started job with the specified name
 
         :param job_name: Job name (to match with the name field of Work)
         :param without_check: Whether to skip checking the status of previous works
-        :return: A tuple of (project_name, Work) matching job_name, returns (None, None) if not found
+        :return: A tuple of (Project, Work) containing the matching project and job, returns (None, None) if not found
         """
         # Iterate through all projects, find a not started work
-        for project_name, project in self.projects.items():
+        for project in self.projects.values():
             work = project.get_work_by_name(job_name, without_check)
             if work:
-                return project_name, work
+                return project, work
         return None, None
 
     def update_work_status(self, project_name: str, work: Work, status: str) -> None:
